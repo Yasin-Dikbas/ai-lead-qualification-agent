@@ -4,6 +4,10 @@
 
 > Demo project. All data in this repository and in the demo video is fictional. The workflow is a working reference build that I adapt to each client's stack (HubSpot, Pipedrive, Slack, WhatsApp, etc.).
 
+## Demo video
+
+[Watch the demo (27s, mp4)](./LOOM_SCRIPT.mp4) — shows the webhook firing, the AI scoring the lead live, the Google Sheet row appearing, the Telegram alert and the follow-up email.
+
 ---
 
 ## The problem
