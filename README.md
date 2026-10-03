@@ -101,7 +101,7 @@ See `sample-payload.json` for a ready-made hot lead. Change `budget` and `messag
 
 I build and maintain practical AI automations for sales and support teams: lead qualification, RAG support chatbots, voice appointment assistants, Instagram DM booking bots and Gmail sales automation.
 
-**Upwork profile:** coming soon — in the meantime, reach out by email below.
+**Hire me on Upwork:** https://www.upwork.com/freelancers/~0165f801ed2f8cc474
 **Email:** dikbasyasin6@gmail.com
 
 If you want this adapted to your CRM and your lead sources, send me a short description of your current process and I will reply with a scoped plan and fixed price.
