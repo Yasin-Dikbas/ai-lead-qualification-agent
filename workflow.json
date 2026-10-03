@@ -1,0 +1,294 @@
+{
+  "name": "Proje 1 - Lead Qualification Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-intake",
+        "options": {}
+      },
+      "id": "da6bf2a6-4c0c-462f-88f3-2bf2e6131fae",
+      "name": "Webhook: New Lead",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1344,
+        144
+      ],
+      "webhookId": "lead-intake"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f1",
+              "name": "name",
+              "type": "string",
+              "value": "={{ $json.body.name }}"
+            },
+            {
+              "id": "f2",
+              "name": "email",
+              "type": "string",
+              "value": "={{ $json.body.email }}"
+            },
+            {
+              "id": "f3",
+              "name": "company",
+              "type": "string",
+              "value": "={{ $json.body.company }}"
+            },
+            {
+              "id": "f4",
+              "name": "budget",
+              "type": "string",
+              "value": "={{ $json.body.budget }}"
+            },
+            {
+              "id": "f5",
+              "name": "industry",
+              "type": "string",
+              "value": "={{ $json.body.industry }}"
+            },
+            {
+              "id": "f6",
+              "name": "message",
+              "type": "string",
+              "value": "={{ $json.body.message }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9e0e711b-ec17-44e5-8153-28eb6b22a130",
+      "name": "Normalize Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1120,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  model:\"openai/gpt-oss-20b\",\n  temperature: 0.3,\n  response_format: { type: \"json_object\" },\n  messages: [\n    {\n      role: \"system\",\n      content: \"You are a B2B lead qualification assistant. You will receive a lead's name, email, company, budget, industry and message. Return ONLY a raw JSON object (no markdown, no extra text) with exactly these keys: score (integer 0-100, overall lead quality), label (one of: hot, warm, cold), summary (one concise sentence explaining the score, written for a salesperson). Scoring guidance: clearly stated adequate budget and strong buying intent in the message = high score (70-100). Vague budget or exploratory message = medium score (40-69). No budget, very low budget, or clearly not a fit = low score (0-39).\"\n    },\n    {\n      role: \"user\",\n      content: JSON.stringify({ name: $json.name, email: $json.email, company: $json.company, budget: $json.budget, industry: $json.industry, message: $json.message })\n    }\n  ]\n}) }}",
+        "options": {}
+      },
+      "id": "b8074e0e-b6c3-40f2-a88c-f19da4cd16c1",
+      "name": "AI: Score Lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -896,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead = $('Normalize Input').first().json;\nconst aiRaw = $input.first().json.choices[0].message.content;\nlet ai;\ntry {\n  ai = JSON.parse(aiRaw);\n} catch (e) {\n  ai = { score: 0, label: 'cold', summary: 'AI response could not be parsed: ' + aiRaw };\n}\nreturn [{\n  json: {\n    ...lead,\n    score: ai.score,\n    label: ai.label,\n    summary: ai.summary,\n    date: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "4f0ccd2a-9507-4381-8ced-1f5919ccbdf4",
+      "name": "Parse AI Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -688,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_YOUR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Lead Agent Leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/REPLACE_WITH_YOUR_SHEET_ID/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sayfa1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/REPLACE_WITH_YOUR_SHEET_ID/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ $json.name }}",
+            "Email": "={{ $json.email }}",
+            "Company": "={{ $json.company }}",
+            "Budget": "={{ $json.budget }}",
+            "Industry": "={{ $json.industry }}",
+            "Message": "={{ $json.message }}",
+            "Score": "={{ $json.score }}",
+            "Label": "={{ $json.label }}",
+            "Summary": "={{ $json.summary }}",
+            "Date": "={{ $json.date }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            { "id": "Name", "displayName": "Name", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "Email", "displayName": "Email", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "Company", "displayName": "Company", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "Budget", "displayName": "Budget", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "Industry", "displayName": "Industry", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "Message", "displayName": "Message", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "Score", "displayName": "Score", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "Label", "displayName": "Label", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "Summary", "displayName": "Summary", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "Date", "displayName": "Date", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "ba0c8a4b-c08f-424a-8dde-ab8ba805f692",
+      "name": "Save Lead to Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -464,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: $('Parse AI Output').first().json }];"
+      },
+      "id": "6c670e4d-bb00-46d4-a00c-aae8d9dd4a37",
+      "name": "Restore Lead Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.score }}",
+              "rightValue": 60,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a5489285-6170-4a70-a8e7-069c334d64bd",
+      "name": "Is Hot Lead?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -16,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "Thanks for reaching out, {{ $json.name }}!",
+        "emailType": "text",
+        "message": "=Hi {{ $json.name }},\n\nThanks for telling us about {{ $json.company }}. Based on what you shared, here's a quick note from our team: {{ $json.summary }}\n\nSomeone from our team will reach out shortly to set up a quick call.\n\nBest,\nThe Team",
+        "options": {}
+      },
+      "id": "7466dda6-d922-4a4d-a218-450cc64a8e79",
+      "name": "Send Personalized Follow-up",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        224,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "REPLACE_WITH_YOUR_TELEGRAM_CHAT_ID",
+        "text": "=🔥 New HOT lead ({{ $json.score }}/100)\nName: {{ $json.name }}\nCompany: {{ $json.company }}\nEmail: {{ $json.email }}\nSummary: {{ $json.summary }}",
+        "additionalFields": {}
+      },
+      "id": "180be5dd-eddd-4ed7-acfd-f04889c0342e",
+      "name": "Notify Sales Team",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "Some resources that might help, {{ $json.name }}",
+        "emailType": "text",
+        "message": "=Hi {{ $json.name }},\n\nThanks for reaching out! Based on what you shared, here are a few resources that might be useful right now: [link 1], [link 2].\n\nWhenever you're ready to talk budget and timeline, just reply to this email.\n\nBest,\nThe Team",
+        "options": {}
+      },
+      "id": "d5c4ccf5-36a5-4934-a0df-64823f29d4f2",
+      "name": "Send Resource Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        240,
+        384
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook: New Lead": {
+      "main": [[{ "node": "Normalize Input", "type": "main", "index": 0 }]]
+    },
+    "Normalize Input": {
+      "main": [[{ "node": "AI: Score Lead", "type": "main", "index": 0 }]]
+    },
+    "AI: Score Lead": {
+      "main": [[{ "node": "Parse AI Output", "type": "main", "index": 0 }]]
+    },
+    "Parse AI Output": {
+      "main": [[{ "node": "Save Lead to Sheet", "type": "main", "index": 0 }]]
+    },
+    "Save Lead to Sheet": {
+      "main": [[{ "node": "Restore Lead Data", "type": "main", "index": 0 }]]
+    },
+    "Restore Lead Data": {
+      "main": [[{ "node": "Is Hot Lead?", "type": "main", "index": 0 }]]
+    },
+    "Is Hot Lead?": {
+      "main": [
+        [
+          { "node": "Send Personalized Follow-up", "type": "main", "index": 0 },
+          { "node": "Notify Sales Team", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Send Resource Email", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
